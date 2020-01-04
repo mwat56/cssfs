@@ -103,7 +103,7 @@ func (cf tCSSFilesFilesystem) Open(aName string) (http.File, error) {
 	}
 
 	f, err := cf.fs.Open(mName)
-	return tNoDirsFile{f}, nil
+	return tNoDirsFile{f}, err
 } // Open()
 
 // Readdir reads the contents of the directory associated with file `f`
