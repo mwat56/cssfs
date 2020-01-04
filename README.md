@@ -1,4 +1,4 @@
-# cssfs
+# CSSfs
 
 [![golang](https://img.shields.io/badge/Language-Go-green.svg)](https://golang.org)
 [![GoDoc](https://godoc.org/github.com/mwat56/cssfs?status.svg)](https://godoc.org/github.com/mwat56/cssfs)
@@ -11,20 +11,52 @@
 
 ----
 
+- [CSSfs](#cssfs)
+	- [Purpose](#purpose)
+	- [Installation](#installation)
+	- [Usage](#usage)
+	- [Licence](#licence)
+
 ## Purpose
 
-    //TODO
+Cascading Style Sheets (CSS) needed a long time to become browser independently usable.
+In this long time the capabilities seem to have grown almost beyond recognition.
+One thing, however, that didn't change over the last 25 years is the fact that in the end a style sheet is just a plain old text file.
+Sure, there is some sort of grammar and a certain vocabulary; but it all boils down to lines/paragraphs, nicely formatted to make it easy to read and edit.
+
+Easy, that is, for humans.
+For the machines (browser) almost all of the spaces and linebreaks used to format a style sheet are just white space, white noise to be removed – or at least actively ignored – during reading and interpreting the file.
+
+Additionally, that white space – during transfer – uses bandwidth and hence time and energy.
+So getting rid of all those unneeded characters in the style sheet before transmitting it to the end-user (browser) saves both time and money for all parties involved.
+And that's the whole purpose of this little package: To remove the unneeded characters from a style sheet.
 
 ## Installation
 
 You can use `Go` to install this package for you:
 
-    go get -u github.com/mwat56/cssfs
+	go get -u github.com/mwat56/cssfs
+
+or you can just include it in your own server's code base
+
+	import "github.com/mwat56/cssfs"
 
 ## Usage
 
-    //TODO
+This package exports a single function `FileServer()`.
+So, while you're used to call
 
+	myCSSDirectory := "./css"
+	myCSSHandler := http.FileServer(http.Dir(myCSSDirectory)))
+
+to create a fileserver for your static CSS files now, to use _this_ implementation, you'd just do:
+
+	myCSSHandler := cssfs.FileServer(http.Dir(myCSSDirectory)))
+
+That's all; just replace `http` by `cssfs` as the fileserver's package.
+
+Internally, whenever a CSS file is requested this package's fileserver checks whether there's already a minified version available and, if so, serves it.
+Otherwise it creates the minified version from the original CSS file to be used for this and all following calls.
 
 ## Licence
 
