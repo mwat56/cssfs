@@ -34,21 +34,28 @@ type (
 		regEx   *regexp.Regexp
 		replace string
 	}
+
+	// Simple struct embedding a `http.File` and ignoring
+	// directory reads.
+	tNoDirsFile struct {
+		http.File
+	}
 )
 
 var (
-	// RegExes to find whiteplace in a CSS file.
+	// Regular expressions to find whitespace in a CSS file.
 	cssREs = []tCSSre{
 		{regexp.MustCompile(`(?s)\s*/\x2A.*?\x2A/\s*`), ` `}, /* comment */
 		{regexp.MustCompile(`\s*([:;\{,+!])\s*`), `$1`},
 		{regexp.MustCompile(`\s*\}\s*\}\s*`), `}}`},
-		{regexp.MustCompile(`\s*;?\s*\}\s*`), `}`},
+		{regexp.MustCompile(`\s*;?\}\s*`), `}`},
 		{regexp.MustCompile(`^\s+`), ``},
 		{regexp.MustCompile(`\s+$`), ``},
 	}
 )
 
-// `createMinFile()` generates a minified version of `aCSSName`.
+// `createMinFile()` generates a minified version of `aCSSName` in
+// `aMinName` returning a possible I/O error.
 //
 //	`aCSSName` The filename of the original CSS file.
 //	`aMinName` The filename of the minified CSS file.
@@ -75,8 +82,13 @@ func (cf tCSSFilesFilesystem) Open(aName string) (http.File, error) {
 
 	mInfo, err := os.Stat(mName)
 	if (nil != err) || (0 == mInfo.Size()) {
-		_ = createMinFile(cName, mName) // #nosec G104
-		return cf.fs.Open(mName)
+		if err = createMinFile(cName, mName); /* #nosec G104 */ nil != err {
+			f, err := cf.fs.Open(cName)
+			return tNoDirsFile{f}, err
+		}
+
+		f, err := cf.fs.Open(mName)
+		return tNoDirsFile{f}, err
 	}
 
 	cInfo, err := os.Stat(cName)
@@ -84,11 +96,25 @@ func (cf tCSSFilesFilesystem) Open(aName string) (http.File, error) {
 		return nil, err
 	}
 	if mTime := mInfo.ModTime(); mTime.Before(cInfo.ModTime()) {
-		_ = createMinFile(cName, mName) // #nosec G104
+		if err = createMinFile(cName, mName); /* #nosec G104 */ nil != err {
+			f, err := cf.fs.Open(cName)
+			return tNoDirsFile{f}, err
+		}
 	}
 
-	return cf.fs.Open(mName)
+	f, err := cf.fs.Open(mName)
+	return tNoDirsFile{f}, nil
 } // Open()
+
+// Readdir reads the contents of the directory associated with file `f`
+// and returns a slice of up to `aCount` FileInfo values, as would
+// be returned by `Lstat`, in directory order.
+//
+// NOTE: This implementation ignores `aCount` and returns nothing,
+// i.e. both the `FileInfo` list and the `error` are `nil`.
+func (f tNoDirsFile) Readdir(aCount int) ([]os.FileInfo, error) {
+	return nil, nil
+} // Readdir()
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
