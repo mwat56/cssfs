@@ -51,9 +51,9 @@ So, while you're used to call
 
 to create a fileserver for your static CSS files now, to use _this_ implementation, you'd just do:
 
-	myCSSHandler := cssfs.FileServer(http.Dir(myCSSDirectory)))
+	myCSSHandler := cssfs.FileServer(myCSSDirectory)
 
-That's all; just replace `http` by `cssfs` as the fileserver's package.
+That's all.
 
 Internally, whenever a CSS file is requested this package's fileserver checks whether there's already a minified version available and, if so, serves it.
 Otherwise it creates the minified version from the original CSS file to be used for this and all following calls.

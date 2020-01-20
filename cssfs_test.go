@@ -6,7 +6,10 @@
 
 package cssfs
 
+//lint:file-ignore ST1017 - I prefer Yoda conditions
+
 import (
+	"net/http"
 	"os"
 	"testing"
 )
@@ -75,11 +78,12 @@ body { /* default background colour */
 	}
 } // Test_removeCSSwhitespace()
 
-func Test_createMinFile(t *testing.T) {
+func Test_tCSSFilesFilesystem_createMinFile(t *testing.T) {
 	c1 := `./css/stylesheet.css`
 	c2 := `./css/dark.css`
 	c3 := `./css/light.css`
 	c4 := `./css/fonts.css`
+	fs := newFS(`./`)
 	defer func() {
 		_ = os.Remove(c1 + cssNameSuffix)
 		_ = os.Remove(c2 + cssNameSuffix)
@@ -87,25 +91,74 @@ func Test_createMinFile(t *testing.T) {
 		_ = os.Remove(c4 + cssNameSuffix)
 	}()
 	type args struct {
-		aCSSName string
-		aMinName string
+		aName string
 	}
 	tests := []struct {
 		name    string
+		fields  tCSSFilesFilesystem
 		args    args
 		wantErr bool
 	}{
 		// TODO: Add test cases.
-		{" 1", args{c1, c1 + cssNameSuffix}, false},
-		{" 2", args{c2, c2 + cssNameSuffix}, false},
-		{" 3", args{c3, c3 + cssNameSuffix}, false},
-		{" 4", args{c4, c4 + cssNameSuffix}, false},
+		{" 1", fs, args{c1}, false},
+		{" 2", fs, args{c2}, false},
+		{" 3", fs, args{c3}, false},
+		{" 4", fs, args{c4}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := createMinFile(tt.args.aCSSName, tt.args.aMinName); (err != nil) != tt.wantErr {
-				t.Errorf("createMinFile() error = %v, wantErr %v", err, tt.wantErr)
+			cf := tCSSFilesFilesystem{
+				fs:   tt.fields.fs,
+				root: tt.fields.root,
+			}
+			if err := cf.createMinFile(tt.args.aName); (err != nil) != tt.wantErr {
+				t.Errorf("tCSSFilesFilesystem.createMinFile() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
-} // Test_createMinFile()
+} // Test_tCSSFilesFilesystem_createMinFile()
+
+func Test_tCSSFilesFilesystem_Open(t *testing.T) {
+	c1 := `./css/stylesheet.css`
+	c2 := `./css/dark.css`
+	c3 := `./css/light.css`
+	c4 := `./css/fonts.css`
+	fs := newFS(`./`)
+	defer func() {
+		_ = os.Remove(c1 + cssNameSuffix)
+		_ = os.Remove(c2 + cssNameSuffix)
+		_ = os.Remove(c3 + cssNameSuffix)
+		_ = os.Remove(c4 + cssNameSuffix)
+	}()
+	var hf http.File
+
+	type args struct {
+		aName string
+	}
+	tests := []struct {
+		name    string
+		cf      tCSSFilesFilesystem
+		args    args
+		want    http.File
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{" 0", fs, args{`doesn't exist`}, hf, true},
+		{" 1", fs, args{c1}, hf, false},
+		{" 2", fs, args{c2}, hf, false},
+		{" 3", fs, args{c3}, hf, false},
+		{" 4", fs, args{c4}, hf, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.cf.Open(tt.args.aName)
+			if (nil != err) != tt.wantErr {
+				t.Errorf("tCSSFilesFilesystem.Open() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if (nil == got) && (!tt.wantErr) {
+				t.Errorf("tCSSFilesFilesystem.Open() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+} // Test_tCSSFilesFilesystem_Open()
