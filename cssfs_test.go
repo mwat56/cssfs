@@ -11,6 +11,7 @@ package cssfs
 import (
 	"net/http"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -79,11 +80,12 @@ body { /* default background colour */
 } // Test_removeCSSwhitespace()
 
 func Test_tCSSFilesFilesystem_createMinFile(t *testing.T) {
+	dir, _ := filepath.Abs(`./`)
 	c1 := `./css/stylesheet.css`
-	c2 := `./css/dark.css`
-	c3 := `./css/light.css`
-	c4 := `./css/fonts.css`
-	fs := newFS(`./`)
+	c2 := `/css/dark.css`
+	c3 := `css/light.css`
+	c4 := dir + `/css/fonts.css`
+	fs := newFS(dir)
 	defer func() {
 		_ = os.Remove(c1 + cssNameSuffix)
 		_ = os.Remove(c2 + cssNameSuffix)
@@ -100,6 +102,7 @@ func Test_tCSSFilesFilesystem_createMinFile(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
+		{" 0", fs, args{`does not exist`}, true},
 		{" 1", fs, args{c1}, false},
 		{" 2", fs, args{c2}, false},
 		{" 3", fs, args{c3}, false},
@@ -119,11 +122,12 @@ func Test_tCSSFilesFilesystem_createMinFile(t *testing.T) {
 } // Test_tCSSFilesFilesystem_createMinFile()
 
 func Test_tCSSFilesFilesystem_Open(t *testing.T) {
+	dir, _ := filepath.Abs(`./`)
 	c1 := `./css/stylesheet.css`
-	c2 := `./css/dark.css`
-	c3 := `./css/light.css`
-	c4 := `./css/fonts.css`
-	fs := newFS(`./`)
+	c2 := `/css/dark.css`
+	c3 := `css/light.css`
+	c4 := `/css/fonts.css`
+	fs := newFS(dir)
 	defer func() {
 		_ = os.Remove(c1 + cssNameSuffix)
 		_ = os.Remove(c2 + cssNameSuffix)

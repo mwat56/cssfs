@@ -15,6 +15,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strings"
 )
 
 const (
@@ -52,16 +53,15 @@ var (
 		{regexp.MustCompile(`\s*\}\s*\}\s*`), `}}`},
 		{regexp.MustCompile(`\s*;?\}\s*`), `}`},
 		{regexp.MustCompile(`^\s+`), ``},
-		{regexp.MustCompile(`\s+$`), ``},
 	}
 )
 
 // `createMinFile()` generates a minified version of file `aName`
 // returning a possible I/O error.
 //
-//	`aName` The filename of the original CSS file.
+//	`aName` The URLpath/filename of the original CSS file.
 func (cf tCSSFilesFilesystem) createMinFile(aName string) error {
-	if !path.IsAbs(aName) {
+	if !strings.HasPrefix(aName, cf.root) {
 		aName = filepath.Join(cf.root,
 			filepath.FromSlash(path.Clean(`/`+aName)))
 	}
@@ -84,7 +84,7 @@ func (cf tCSSFilesFilesystem) createMinFile(aName string) error {
 //
 //	`aName` The name of the CSS file to open.
 func (cf tCSSFilesFilesystem) Open(aName string) (http.File, error) {
-	mName := aName+cssNameSuffix
+	mName := aName + cssNameSuffix
 
 	mFile, err := cf.fs.Open(mName)
 	if nil != err {
