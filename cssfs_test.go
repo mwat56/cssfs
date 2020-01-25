@@ -26,6 +26,30 @@ func removeCSSwhitespace(aCSS []byte) []byte {
 	return aCSS
 } // removeCSSwhitespace()
 
+func Test_minName(t *testing.T) {
+	type args struct {
+		aFilename string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		// TODO: Add test cases.
+		{" 0", args{``}, `/dev/null`},
+		{" 1", args{`./stylesheet`}, `./stylesheet` + cssNameSuffix},
+		{" 2", args{`./stylesheetcss`}, `./stylesheetcss` + cssNameSuffix},
+		{" 2", args{`./stylesheet.css`}, `./stylesheet` + cssNameSuffix},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := minName(tt.args.aFilename); got != tt.want {
+				t.Errorf("minName() = '%v',\nwant `%v`", got, tt.want)
+			}
+		})
+	}
+} // Test_minName()
+
 func Test_removeCSSwhitespace(t *testing.T) {
 	c0 := []byte(``)
 	w0 := []byte(``)

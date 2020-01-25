@@ -18,11 +18,6 @@ import (
 	"strings"
 )
 
-const (
-	// Filename suffix for trimmed CSS files.
-	cssNameSuffix = `.min`
-)
-
 type (
 	// Simple struct embedding a `http.FileSystem` that
 	// serves minified CSS file.
@@ -75,16 +70,14 @@ func (cf tCSSFilesFilesystem) createMinFile(aName string) error {
 		cssData = re.regEx.ReplaceAll(cssData, []byte(re.replace))
 	}
 
-	return ioutil.WriteFile(aName+cssNameSuffix, cssData, 0640) // #nosec G302
+	return ioutil.WriteFile(minName(aName), cssData, 0640)
 } // createMinFile()
-
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 // Open returns a `http.File` containing a minified CSS file.
 //
 //	`aName` The name of the CSS file to open.
 func (cf tCSSFilesFilesystem) Open(aName string) (http.File, error) {
-	mName := aName + cssNameSuffix
+	mName := minName(aName)
 
 	mFile, err := cf.fs.Open(mName)
 	if nil != err {
@@ -150,6 +143,30 @@ func (f tNoDirsFile) Readdir(aCount int) ([]os.FileInfo, error) {
 func FileServer(aRootDir string) http.Handler {
 	return http.FileServer(newFS(aRootDir))
 } // FileServer()
+
+const (
+	// Filename suffix for trimmed CSS files.
+	cssNameSuffix = `.min.css`
+	// Note that we have to use the `.css` extension since stdlib
+	// determines by file extension which data/type to send.
+)
+
+// `minName()` returns the name to use for the trimmed CSS file.
+//
+//	`aFilename` The name of the original CSS file.
+func minName(aFilename string) string {
+	if 0 == len(aFilename) {
+		return `/dev/null`
+	}
+
+	if strings.HasSuffix(aFilename, `.css`) {
+		if i := strings.LastIndexByte(aFilename, '.'); 0 < i {
+			return aFilename[:i] + cssNameSuffix
+		}
+	}
+
+	return aFilename + cssNameSuffix
+} // minName()
 
 // `newFS()` returns a new `tCSSFilesFilesystem` instance.
 //
