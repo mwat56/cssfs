@@ -1,6 +1,7 @@
 /*
 
-Package cssfs implements …
+Package cssfs implements a handler which serves HTTP request to a CSS file
+with a minified version (i.e. unnecessary whitespace removed) of that file.
 
     Copyright © 2020 M.Watermann, 10247 Berlin, Germany
                     All rights reserved
