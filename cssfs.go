@@ -20,8 +20,8 @@ import (
 
 type (
 	// Simple struct embedding a `http.FileSystem` that
-	// serves minified CSS file.
-	tCSSFilesFilesystem struct {
+	// serves minified CSS files.
+	tCSSfilesFilesystem struct {
 		fs   http.FileSystem
 		root string
 	}
@@ -43,16 +43,17 @@ type (
 var (
 	// Regular expressions to find/replace whitespace in a CSS file.
 	cssREs = []tCSSre{
-		{regexp.MustCompile(`(?s)\s*/\x2A.*?\x2A/\s*`), ` `}, /* comment */
-		{regexp.MustCompile(`\s*([;\{,+!])\s*`), `$1`},
-		{regexp.MustCompile(`\s*\}\s*\}\s*`), `}}`},
-		{regexp.MustCompile(`(?i)([\s:])([+-]?0)(?:%|cm|em|ex|in|mm|pc|pt|px|rem)`), `0`},
-		{regexp.MustCompile(`\s+(:\w)`), ` $1`},
-		{regexp.MustCompile(`(\w:)\s+`), `$1`},
-		{regexp.MustCompile(`\s+:\s+`), `:`},
-		{regexp.MustCompile(`\s*;?\}\s*`), `}`},
-		{regexp.MustCompile(`((\{.*?)\s+:\s*)`), `$2:`},
-		{regexp.MustCompile(`^\s+`), ``},
+		{regexp.MustCompile(`(?s)\s*/\x2A.*?\x2A/\s*`), ` `}, // comment
+		{regexp.MustCompile(`\s*([;\{,+!])\s*`), `$1`},       // punctuation
+		{regexp.MustCompile(`\s*\}\s*\}\s*`), `}}`},          // dito
+		// superfluous measurements units:
+		{regexp.MustCompile(`(?i)([\s:])([+-]?0)(?:cm|em|ex|in|mm|pc|pt|px|rem|%)`), `0`},
+		{regexp.MustCompile(`\s+(:\w)`), ` $1`},         // colon
+		{regexp.MustCompile(`(\w:)\s+`), `$1`},          // dito
+		{regexp.MustCompile(`\s+:\s+`), `:`},            // dito
+		{regexp.MustCompile(`((\{.*?)\s+:\s*)`), `$2:`}, // dito
+		{regexp.MustCompile(`\s*;?\}\s*`), `}`},         // final semicolon
+		{regexp.MustCompile(`^\s+`), ``},                // leading whitespace
 	}
 )
 
@@ -60,7 +61,7 @@ var (
 // returning a possible I/O error.
 //
 //	`aName` The URLpath/filename of the original CSS file.
-func (cf tCSSFilesFilesystem) createMinFile(aName string) error {
+func (cf tCSSfilesFilesystem) createMinFile(aName string) error {
 	if !strings.HasPrefix(aName, cf.root) {
 		aName = filepath.Join(cf.root,
 			filepath.FromSlash(path.Clean(`/`+aName)))
@@ -81,7 +82,7 @@ func (cf tCSSFilesFilesystem) createMinFile(aName string) error {
 // Open returns a `http.File` containing a minified CSS file.
 //
 //	`aName` The name of the CSS file to open.
-func (cf tCSSFilesFilesystem) Open(aName string) (http.File, error) {
+func (cf tCSSfilesFilesystem) Open(aName string) (http.File, error) {
 	mName := minName(aName)
 
 	mFile, err := cf.fs.Open(mName)
@@ -132,28 +133,11 @@ func (f tNoDirsFile) Readdir(aCount int) ([]os.FileInfo, error) {
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-// FileServer returns a handler that serves HTTP requests
-// with the contents of the file system rooted at `aRoot`.
-//
-// To use the operating system's file system implementation,
-// use `http.Dir()`:
-//
-//	myHandler := http.FileServer(http.Dir("/cssdir"))
-//
-// To use this implementation you'd use:
-//
-//	myHandler := cssfs.FileServer("/cssdir")
-//
-//	`aRootDir` The root of the filesystem to serve.
-func FileServer(aRootDir string) http.Handler {
-	return http.FileServer(newFS(aRootDir))
-} // FileServer()
-
 const (
-	// Filename suffix for trimmed CSS files.
+	// Filename suffix for trimmed/minified CSS files.
 	cssNameSuffix = `.min.css`
 	// Note that we have to use the `.css` extension since stdlib
-	// determines by file extension which data/type to send.
+	// determines which data/type to send by file extension.
 )
 
 // `minName()` returns the name to use for the trimmed CSS file.
@@ -176,13 +160,32 @@ func minName(aFilename string) string {
 // `newFS()` returns a new `tCSSFilesFilesystem` instance.
 //
 //	`aRootDir` The root of the filesystem to serve.
-func newFS(aRootDir string) tCSSFilesFilesystem {
+func newFS(aRootDir string) tCSSfilesFilesystem {
 	dir, _ := filepath.Abs(aRootDir)
 
-	return tCSSFilesFilesystem{
+	return tCSSfilesFilesystem{
 		fs:   http.Dir(dir),
 		root: dir,
 	}
 } // newFS()
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+// FileServer returns a handler that serves HTTP requests
+// with the contents of the file system rooted at `aRoot`.
+//
+// To use the operating system's file system implementation,
+// use `http.Dir()`:
+//
+//	myHandler := http.FileServer(http.Dir("/cssdir"))
+//
+// To use this implementation you'd use:
+//
+//	myHandler := cssfs.FileServer("/cssdir")
+//
+//	`aRootDir` The root of the filesystem to serve.
+func FileServer(aRootDir string) http.Handler {
+	return http.FileServer(newFS(aRootDir))
+} // FileServer()
 
 /* _EoF_ */

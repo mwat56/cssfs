@@ -15,6 +15,7 @@
 	- [Purpose](#purpose)
 	- [Installation](#installation)
 	- [Usage](#usage)
+	- [Caveat](#caveat)
 	- [Licence](#licence)
 
 ## Purpose
@@ -57,6 +58,10 @@ That's all.
 
 Internally, whenever a CSS file is requested this package's fileserver checks whether there's already a minified version available and, if so, serves it.
 Otherwise it creates the minified version from the original CSS file to be used for this and all following calls.
+
+## Caveat
+
+This package expects wellformed CSS files. If you find problems – i.e. incorrectly minified CSS – please let me know.
 
 ## Licence
 

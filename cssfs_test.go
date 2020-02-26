@@ -51,8 +51,7 @@ func Test_minName(t *testing.T) {
 } // Test_minName()
 
 func Test_removeCSSwhitespace(t *testing.T) {
-	c0 := []byte(``)
-	w0 := []byte(``)
+	c0, w0 := []byte(``), []byte(``)
 	c1 := []byte(`/*
 this are my css rules
 */
@@ -67,8 +66,8 @@ body { /* default background colour */
 	c3 := []byte(`
 @media screen {
 	body {
-		background : #f9f9f3;
-		display :block;
+		background : #f9f9f3; /* default background colour */
+		display    :block;
 	}
 }
 
@@ -83,8 +82,8 @@ body { /* default background colour */
 
 	c4 := []byte(`p :link { display: inline; } a: hover { display :none; }`)
 	w4 := []byte(`p :link{display:inline}a:hover{display:none}`)
-	c5 := []byte(`div.empty { height: 0em; width: 0ex; }`)
-	w5 := []byte(`div.empty{height:0;width:0}`)
+	c5 := []byte(`div.empty { height: 0em; width: 0ex; } #main { max-width: 99%; }`)
+	w5 := []byte(`div.empty{height:0;width:0}#main{max-width:99%}`)
 
 	type args struct {
 		aCSS []byte
@@ -129,7 +128,7 @@ func Test_tCSSFilesFilesystem_createMinFile(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		fields  tCSSFilesFilesystem
+		fields  tCSSfilesFilesystem
 		args    args
 		wantErr bool
 	}{
@@ -142,7 +141,7 @@ func Test_tCSSFilesFilesystem_createMinFile(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cf := tCSSFilesFilesystem{
+			cf := tCSSfilesFilesystem{
 				fs:   tt.fields.fs,
 				root: tt.fields.root,
 			}
@@ -173,7 +172,7 @@ func Test_tCSSFilesFilesystem_Open(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		cf      tCSSFilesFilesystem
+		cf      tCSSfilesFilesystem
 		args    args
 		want    http.File
 		wantErr bool
