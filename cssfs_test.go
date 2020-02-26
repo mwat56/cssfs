@@ -68,18 +68,21 @@ body { /* default background colour */
 @media screen {
 	body {
 		background : #f9f9f3;
+		display :block;
 	}
 }
 
 @media print {
 	body {
-		background : #fff;
+		background: #fff;
 	}
 }
 
 `)
-	w3 := []byte(`@media screen{body{background:#f9f9f3}}@media print{body{background:#fff}}`)
+	w3 := []byte(`@media screen{body{background:#f9f9f3;display:block}}@media print{body{background:#fff}}`)
 
+	c4 := []byte(`p :link { display: inline; } a: hover { display :none; }`)
+	w4 := []byte(`p :link{display:inline}a:hover{display:none}`)
 	type args struct {
 		aCSS []byte
 	}
@@ -93,6 +96,7 @@ body { /* default background colour */
 		{" 1", args{c1}, w1},
 		{" 2", args{c2}, w2},
 		{" 3", args{c3}, w3},
+		{" 4", args{c4}, w4},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

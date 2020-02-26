@@ -41,12 +41,16 @@ type (
 )
 
 var (
-	// Regular expressions to find whitespace in a CSS file.
+	// Regular expressions to find/replace whitespace in a CSS file.
 	cssREs = []tCSSre{
 		{regexp.MustCompile(`(?s)\s*/\x2A.*?\x2A/\s*`), ` `}, /* comment */
-		{regexp.MustCompile(`\s*([:;\{,+!])\s*`), `$1`},
+		{regexp.MustCompile(`\s*([;\{,+!])\s*`), `$1`},
 		{regexp.MustCompile(`\s*\}\s*\}\s*`), `}}`},
+		{regexp.MustCompile(`\s+(:\w)`), ` $1`},
+		{regexp.MustCompile(`(\w:)\s+`), `$1`},
+		{regexp.MustCompile(`\s+:\s+`), `:`},
 		{regexp.MustCompile(`\s*;?\}\s*`), `}`},
+		{regexp.MustCompile(`((\{.*?)\s+:\s*)`), `$2:`},
 		{regexp.MustCompile(`^\s+`), ``},
 	}
 )
