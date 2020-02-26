@@ -46,6 +46,7 @@ var (
 		{regexp.MustCompile(`(?s)\s*/\x2A.*?\x2A/\s*`), ` `}, /* comment */
 		{regexp.MustCompile(`\s*([;\{,+!])\s*`), `$1`},
 		{regexp.MustCompile(`\s*\}\s*\}\s*`), `}}`},
+		{regexp.MustCompile(`(?i)([\s:])([+-]?0)(?:%|cm|em|ex|in|mm|pc|pt|px|rem)`), `0`},
 		{regexp.MustCompile(`\s+(:\w)`), ` $1`},
 		{regexp.MustCompile(`(\w:)\s+`), `$1`},
 		{regexp.MustCompile(`\s+:\s+`), `:`},

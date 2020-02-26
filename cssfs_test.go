@@ -83,6 +83,9 @@ body { /* default background colour */
 
 	c4 := []byte(`p :link { display: inline; } a: hover { display :none; }`)
 	w4 := []byte(`p :link{display:inline}a:hover{display:none}`)
+	c5 := []byte(`div.empty { height: 0em; width: 0ex; }`)
+	w5 := []byte(`div.empty{height:0;width:0}`)
+
 	type args struct {
 		aCSS []byte
 	}
@@ -97,6 +100,7 @@ body { /* default background colour */
 		{" 2", args{c2}, w2},
 		{" 3", args{c3}, w3},
 		{" 4", args{c4}, w4},
+		{" 5", args{c5}, w5},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -115,10 +119,10 @@ func Test_tCSSFilesFilesystem_createMinFile(t *testing.T) {
 	c4 := dir + `/css/fonts.css`
 	fs := newFS(dir)
 	defer func() {
-		_ = os.Remove(c1 + cssNameSuffix)
-		_ = os.Remove(c2 + cssNameSuffix)
-		_ = os.Remove(c3 + cssNameSuffix)
-		_ = os.Remove(c4 + cssNameSuffix)
+		_ = os.Remove(minName(c1))
+		_ = os.Remove(minName(c2))
+		_ = os.Remove(minName(c3))
+		_ = os.Remove(minName(c4))
 	}()
 	type args struct {
 		aName string
@@ -157,10 +161,10 @@ func Test_tCSSFilesFilesystem_Open(t *testing.T) {
 	c4 := `/css/fonts.css`
 	fs := newFS(dir)
 	defer func() {
-		_ = os.Remove(c1 + cssNameSuffix)
-		_ = os.Remove(c2 + cssNameSuffix)
-		_ = os.Remove(c3 + cssNameSuffix)
-		_ = os.Remove(c4 + cssNameSuffix)
+		_ = os.Remove(minName(c1))
+		_ = os.Remove(minName(c2))
+		_ = os.Remove(minName(c3))
+		_ = os.Remove(minName(c4))
 	}()
 	var hf http.File
 
