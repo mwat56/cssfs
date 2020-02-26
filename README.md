@@ -22,13 +22,13 @@
 Cascading Style Sheets (CSS) needed a long time to become browser independently usable.
 In this long time the capabilities seem to have grown almost beyond recognition.
 One thing, however, that didn't change over the last 25 years is the fact that in the end a style sheet is just a plain old text file.
-Sure, there is some sort of grammar and a certain vocabulary; but it all boils down to lines/paragraphs, nicely formatted to make it easy to read and edit.
+Sure, there is some sort of grammar and a certain vocabulary; but it all boils down to lines/paragraphs, preferably nicely formatted to make it easy to read and edit.
 
 Easy, that is, for humans.
-For the machines (browser) almost all of the spaces and linebreaks used to format a style sheet are just white space, white noise to be removed – or at least actively ignored – during reading and interpreting the file.
+For the machines (browser) almost all of the tabs, spaces, and linebreaks used to format a style sheet are just white space eating memory, white noise to be removed – or at least actively ignored – during reading and interpreting the file.
 
 Additionally, that white space – during transfer – uses bandwidth and hence time and energy.
-So getting rid of all those unneeded characters in the style sheet before transmitting it to the end-user (browser) saves both time and money for all parties involved.
+So, getting rid of all those unneeded characters in the style sheet before transmitting it to the end-user (browser) saves both time and money for all parties involved.
 And that's the whole purpose of this little package: To remove the unneeded characters from a style sheet.
 
 ## Installation
@@ -37,7 +37,7 @@ You can use `Go` to install this package for you:
 
 	go get -u github.com/mwat56/cssfs
 
-or you can just include it in your own server's code base
+or you can just include it directly in your own server's code base
 
 	import "github.com/mwat56/cssfs"
 
