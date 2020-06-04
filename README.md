@@ -6,7 +6,6 @@
 [![Issues](https://img.shields.io/github/issues/mwat56/cssfs.svg)](https://github.com/mwat56/cssfs/issues?q=is%3Aopen+is%3Aissue)
 [![Size](https://img.shields.io/github/repo-size/mwat56/cssfs.svg)](https://github.com/mwat56/cssfs/)
 [![Tag](https://img.shields.io/github/tag/mwat56/cssfs.svg)](https://github.com/mwat56/cssfs/tags)
-[![View examples](https://img.shields.io/badge/learn%20by-examples-0077b3.svg)](https://github.com/mwat56/cssfs/blob/master/_demo/demo.go)
 [![License](https://img.shields.io/github/mwat56/cssfs.svg)](https://github.com/mwat56/cssfs/blob/master/LICENSE)
 
 ----

@@ -33,7 +33,7 @@ type (
 		replace string
 	}
 
-	// Simple struct embedding a `http.File` and ignoring
+	// Simple struct embedding a `http.File` which ignores
 	// directory reads.
 	tNoDirsFile struct {
 		http.File
@@ -87,10 +87,13 @@ func (cf tCSSfilesFilesystem) Open(aName string) (http.File, error) {
 
 	mFile, err := cf.fs.Open(mName)
 	if nil != err {
+		// The minified CSS file couldn't be opened
+		// hence try to create the minified version:
 		if err = cf.createMinFile(aName); /* #nosec G104 */ nil != err {
 			return nil, err
 		}
 
+		// Now, try again to open the minified CSS:
 		mFile, err = cf.fs.Open(mName)
 		return tNoDirsFile{mFile}, err
 	}
@@ -107,15 +110,20 @@ func (cf tCSSfilesFilesystem) Open(aName string) (http.File, error) {
 	mInfo, _ := mFile.Stat()
 	mTime := mInfo.ModTime()
 	if mTime.After(cInfo.ModTime()) {
+		// Shortpath: minified file is younger.
 		_ = cFile.Close()
 		return tNoDirsFile{mFile}, nil
 	}
 
 	_ = mFile.Close()
 	if err = cf.createMinFile(aName); /* #nosec G104 */ nil != err {
+		// Failure to create minified version,
+		// return the original CSS file.
 		return tNoDirsFile{cFile}, err
 	}
 	_ = cFile.Close()
+
+	// Open and return the new minified CSS:
 	mFile, err = cf.fs.Open(mName)
 
 	return tNoDirsFile{mFile}, err
