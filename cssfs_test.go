@@ -9,7 +9,9 @@ package cssfs
 import (
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -25,6 +27,7 @@ func removeCSSwhitespace(aCSS []byte) []byte {
 } // removeCSSwhitespace()
 
 func Test_gzName(t *testing.T) {
+	dir, _ := filepath.Abs(`./`)
 	s1 := `./stylesheet`
 	w1, _ := filepath.Abs(s1)
 	w1 += cssGZnameSuffix
@@ -34,6 +37,8 @@ func Test_gzName(t *testing.T) {
 	s3 := `./stylesheet.css`
 	w3, _ := filepath.Abs(s3)
 	w3 += cssGZnameSuffix
+	fs := newFS(dir, true)
+
 	type args struct {
 		aFilename string
 	}
@@ -50,7 +55,7 @@ func Test_gzName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := gzName(tt.args.aFilename); got != tt.want {
+			if got := fs.gzName(tt.args.aFilename); got != tt.want {
 				t.Errorf("gzName() = %v,\nwant %v", got, tt.want)
 			}
 		})
@@ -58,6 +63,7 @@ func Test_gzName(t *testing.T) {
 } // Test_gzName()
 
 func Test_minName(t *testing.T) {
+	dir, _ := filepath.Abs(`./`)
 	s1 := `./stylesheet`
 	w1, _ := filepath.Abs(s1)
 	w1 += cssMinNameSuffix
@@ -67,6 +73,8 @@ func Test_minName(t *testing.T) {
 	s3 := `./stylesheet.css`
 	w3, _ := filepath.Abs(s3)
 	w3 = w3[:len(w3)-4] + cssMinNameSuffix
+	fs := newFS(dir, false)
+
 	type args struct {
 		aFilename string
 	}
@@ -83,7 +91,7 @@ func Test_minName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := minName(tt.args.aFilename); got != tt.want {
+			if got := fs.minName(tt.args.aFilename); got != tt.want {
 				t.Errorf("minName() = '%v',\nwant `%v`", got, tt.want)
 			}
 		})
@@ -157,62 +165,15 @@ func Test_tCSSfilesFilesystem_createGZfile(t *testing.T) {
 	c3 := `css/light.css`
 	c4 := dir + `/css/fonts.css`
 	fs := newFS(dir, true)
-	/*
-		defer func() {
-			_ = os.Remove(gzName(c1))
-			_ = os.Remove(gzName(c2))
-			_ = os.Remove(gzName(c3))
-			_ = os.Remove(gzName(c4))
-		}()
-	*/
-	type fields struct {
-		fs   http.FileSystem
-		root string
-	}
+	defer func() {
+		_ = os.Remove(fs.gzName(c1))
+		_ = os.Remove(fs.gzName(c2))
+		_ = os.Remove(fs.gzName(c3))
+		_ = os.Remove(fs.gzName(c4))
+	}()
+
 	type args struct {
 		aFilename string
-	}
-	tests := []struct {
-		name    string
-		fields  tCSSfilesFilesystem
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-		{" 0", fs, args{`does not exist`}, true},
-		{" 1", fs, args{c1}, false},
-		{" 2", fs, args{c2}, true},
-		{" 3", fs, args{c3}, false},
-		{" 4", fs, args{c4}, false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cf := tCSSfilesFilesystem{
-				fs:   tt.fields.fs,
-				root: tt.fields.root,
-			}
-			if err := cf.createGZfile(tt.args.aFilename); (err != nil) != tt.wantErr {
-				t.Errorf("tCSSfilesFilesystem.createGZfile() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-} // Test_tCSSfilesFilesystem_createGZfile()
-
-func Test_tCSSFilesFilesystem_createMinFile(t *testing.T) {
-	dir, _ := filepath.Abs(`./`)
-	c1 := `./css/stylesheet.css`
-	c2 := `/css/dark.css`
-	c3 := `css/light.css`
-	c4 := dir + `/css/fonts.css`
-	fs := newFS(dir, false)
-	defer func() {
-		_ = os.Remove(minName(c1))
-		_ = os.Remove(minName(c2))
-		_ = os.Remove(minName(c3))
-		_ = os.Remove(minName(c4))
-	}()
-	type args struct {
-		aName string
 	}
 	tests := []struct {
 		name    string
@@ -229,11 +190,57 @@ func Test_tCSSFilesFilesystem_createMinFile(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cf := tCSSfilesFilesystem{
-				fs:   tt.fields.fs,
-				root: tt.fields.root,
+			cf := tt.fields
+			if !strings.HasPrefix(tt.args.aFilename, cf.root) {
+				tt.args.aFilename = filepath.Join(cf.root,
+					filepath.FromSlash(path.Clean(`/`+tt.args.aFilename)))
 			}
-			if err := cf.createMinFile(tt.args.aName); (err != nil) != tt.wantErr {
+			if err := cf.createGZfile(tt.args.aFilename); (err != nil) != tt.wantErr {
+				t.Errorf("tCSSfilesFilesystem.createGZfile() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+} // Test_tCSSfilesFilesystem_createGZfile()
+
+func Test_tCSSFilesFilesystem_createMinFile(t *testing.T) {
+	dir, _ := filepath.Abs(`./`)
+	c1 := `./css/stylesheet.css`
+	c2 := `/css/dark.css`
+	c3 := `css/light.css`
+	c4 := dir + `/css/fonts.css`
+	fs := newFS(dir, false)
+
+	defer func() {
+		_ = os.Remove(fs.minName(c1))
+		_ = os.Remove(fs.minName(c2))
+		_ = os.Remove(fs.minName(c3))
+		_ = os.Remove(fs.minName(c4))
+	}()
+
+	type args struct {
+		aFilename string
+	}
+	tests := []struct {
+		name    string
+		fields  tCSSfilesFilesystem
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{" 0", fs, args{`does not exist`}, true},
+		{" 1", fs, args{c1}, false},
+		{" 2", fs, args{c2}, false},
+		{" 3", fs, args{c3}, false},
+		{" 4", fs, args{c4}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cf := tt.fields
+			if !strings.HasPrefix(tt.args.aFilename, cf.root) {
+				tt.args.aFilename = filepath.Join(cf.root,
+					filepath.FromSlash(path.Clean(`/`+tt.args.aFilename)))
+			}
+			if err := cf.createMinFile(tt.args.aFilename); (err != nil) != tt.wantErr {
 				t.Errorf("tCSSFilesFilesystem.createMinFile() error = %v,\nwantErr %v", err, tt.wantErr)
 			}
 		})
@@ -250,10 +257,14 @@ func Test_tCSSFilesFilesystem_Open(t *testing.T) {
 	fs2 := newFS(dir, true)
 
 	defer func() {
-		_ = os.Remove(minName(c1))
-		_ = os.Remove(minName(c2))
-		_ = os.Remove(minName(c3))
-		_ = os.Remove(minName(c4))
+		_ = os.Remove(fs1.minName(c1))
+		_ = os.Remove(fs1.minName(c2))
+		_ = os.Remove(fs1.minName(c3))
+		_ = os.Remove(fs1.minName(c4))
+		_ = os.Remove(fs2.gzName(c1))
+		_ = os.Remove(fs2.gzName(c2))
+		_ = os.Remove(fs2.gzName(c3))
+		_ = os.Remove(fs2.gzName(c4))
 	}()
 
 	var hf http.File

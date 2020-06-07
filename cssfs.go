@@ -83,11 +83,6 @@ var (
 //
 //	`aFilename` The URLpath/filename of the original CSS file.
 func (cf tCSSfilesFilesystem) createMinFile(aFilename string) error {
-	if !strings.HasPrefix(aFilename, cf.root) {
-		aFilename = filepath.Join(cf.root,
-			filepath.FromSlash(path.Clean(`/`+aFilename)))
-	}
-
 	cssData, err := ioutil.ReadFile(aFilename) // #nosec G304
 	if err != nil {
 		return err
@@ -97,7 +92,7 @@ func (cf tCSSfilesFilesystem) createMinFile(aFilename string) error {
 		cssData = re.regEx.ReplaceAll(cssData, []byte(re.replace))
 	}
 
-	return ioutil.WriteFile(minName(aFilename), cssData, 0644)
+	return ioutil.WriteFile(cf.minName(aFilename), cssData, 0644)
 } // createMinFile()
 
 // `createGZfile()` generates a minified version of file `aFilename`
@@ -105,7 +100,7 @@ func (cf tCSSfilesFilesystem) createMinFile(aFilename string) error {
 //
 //	`aName` The URLpath/filename of the original CSS file.
 func (cf tCSSfilesFilesystem) createGZfile(aFilename string) error {
-	mName := minName(aFilename)
+	mName := cf.minName(aFilename)
 	mFile, err := os.OpenFile(mName, os.O_RDONLY, 0)
 	if nil != err {
 		// The minified CSS file couldn't be opened
@@ -124,7 +119,7 @@ func (cf tCSSfilesFilesystem) createGZfile(aFilename string) error {
 	}
 	defer mFile.Close()
 
-	zFile, err := os.OpenFile(gzName(aFilename),
+	zFile, err := os.OpenFile(cf.gzName(aFilename),
 		os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644) // #nosec G302
 	if nil != err {
 		return err
@@ -139,17 +134,58 @@ func (cf tCSSfilesFilesystem) createGZfile(aFilename string) error {
 	return err
 } // createGZfile()
 
+// `gzName()` returns the name to use for the compressed CSS file.
+//
+//	`aFilename` The name of the original CSS file.
+func (cf tCSSfilesFilesystem) gzName(aFilename string) string {
+	if 0 == len(aFilename) {
+		return `/dev/null`
+	}
+
+	if !strings.HasPrefix(aFilename, cf.root) {
+		aFilename = filepath.Join(cf.root,
+			filepath.FromSlash(path.Clean(`/`+aFilename)))
+	}
+
+	if result, err := filepath.Abs(aFilename); nil == err {
+		return result + cssGZnameSuffix
+	}
+
+	return aFilename + cssGZnameSuffix
+} // gzName()
+
+// `minName()` returns the name to use for the trimmed CSS file.
+//
+//	`aFilename` The name of the original CSS file.
+func (cf tCSSfilesFilesystem) minName(aFilename string) string {
+	if 0 == len(aFilename) {
+		return `/dev/null`
+	}
+
+	if !strings.HasPrefix(aFilename, cf.root) {
+		aFilename = filepath.Join(cf.root,
+			filepath.FromSlash(path.Clean(`/`+aFilename)))
+	}
+	if result, err := filepath.Abs(aFilename); nil == err {
+		aFilename = result
+	}
+
+	if strings.HasSuffix(aFilename, `.css`) {
+		return aFilename[:len(aFilename)-4] + cssMinNameSuffix
+	}
+
+	return aFilename + cssMinNameSuffix
+} // minName()
+
 // Open returns a `http.File` containing a minified CSS file.
 //
 //	`aName` The name of the CSS file to open.
 func (cf tCSSfilesFilesystem) Open(aFilename string) (http.File, error) {
 	var (
-		ages  tCSSages
-		err   error
-		fInfo os.FileInfo
-		mName string
-		cFile, mFile,
-		rFile, zFile http.File
+		ages                       tCSSages
+		cFile, mFile, rFile, zFile http.File
+		err                        error
+		fInfo                      os.FileInfo
 	)
 	defer func() {
 		if nil != cFile {
@@ -163,18 +199,23 @@ func (cf tCSSfilesFilesystem) Open(aFilename string) (http.File, error) {
 		}
 	}()
 
+	if !strings.HasPrefix(aFilename, cf.root) {
+		aFilename = filepath.Join(cf.root,
+			filepath.FromSlash(path.Clean(`/`+aFilename)))
+	}
+
 	if cf.useGZip {
-		zName := gzName(aFilename)
-		if zFile, err = cf.fs.Open(zName); nil != err {
+		zName := cf.gzName(aFilename)
+		if zFile, err = os.OpenFile(zName, os.O_RDONLY, 0); nil != err {
 			// The compressed CSS file couldn't be opened
 			// hence try to create the compressed version:
 			if err = cf.createGZfile(aFilename); nil == err {
 				// Now, try again to open the compressed CSS:
-				if zFile, err = cf.fs.Open(zName); nil == err {
+				if zFile, err = os.OpenFile(zName, os.O_RDONLY, 0); nil == err {
 					// Since the GZipped file was just created
 					// we don't need the age checks below.
 					rFile, zFile = zFile, nil
-					return tNoDirsFile{rFile}, err
+					return tNoDirsFile{rFile}, nil
 				}
 			}
 			// Since the compressed file couldn't be created
@@ -188,17 +229,17 @@ func (cf tCSSfilesFilesystem) Open(aFilename string) (http.File, error) {
 	// Reaching this point means:
 	// Either we don't use GZip OR there was an old compressed file present.
 
-	mName = minName(aFilename)
-	if mFile, err = cf.fs.Open(mName); nil != err {
+	mName := cf.minName(aFilename)
+	if mFile, err = os.OpenFile(mName, os.O_RDONLY, 0); nil != err {
 		// The minified CSS file couldn't be opened
 		// hence try to create the minified version:
 		if err = cf.createMinFile(aFilename); nil == err {
 			// Now, try again to open the minified CSS:
-			if mFile, err = cf.fs.Open(mName); nil == err {
+			if mFile, err = os.OpenFile(mName, os.O_RDONLY, 0); nil == err {
 				// Since the minified file was just created
 				// we don't need the age checks below.
 				rFile, mFile = mFile, nil
-				return tNoDirsFile{rFile}, err
+				return tNoDirsFile{rFile}, nil
 			}
 		}
 		// Since the minified file couldn't be created
@@ -209,7 +250,7 @@ func (cf tCSSfilesFilesystem) Open(aFilename string) (http.File, error) {
 		}
 	}
 
-	if cFile, err = cf.fs.Open(aFilename); nil == err {
+	if cFile, err = os.OpenFile(aFilename, os.O_RDONLY, 0); nil == err {
 		if fInfo, err = cFile.Stat(); nil == err {
 			ages.CSSAge = fInfo.ModTime()
 		}
@@ -218,7 +259,6 @@ func (cf tCSSfilesFilesystem) Open(aFilename string) (http.File, error) {
 	// Check whether the minified file is
 	// younger than the original CSS file:
 	if ages.MinAge.After(ages.CSSAge) {
-		// Shortpath: minified file is younger.
 		// Check whether the compressed file is younger:
 		if ages.GzAge.After(ages.MinAge) {
 			rFile, zFile = zFile, nil
@@ -235,7 +275,7 @@ func (cf tCSSfilesFilesystem) Open(aFilename string) (http.File, error) {
 	}
 
 	rFile, cFile = cFile, nil
-	// Here `err` might be caused of the unsuccessful
+	// Here `err` might be caused by an unsuccessful
 	// opening of the supposed original CSS file:
 	return tNoDirsFile{rFile}, err
 } // Open()
@@ -251,40 +291,6 @@ func (f tNoDirsFile) Readdir(aCount int) ([]os.FileInfo, error) {
 } // Readdir()
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-
-// `gzName()` returns the name to use for the compressed CSS file.
-//
-//	`aFilename` The name of the original CSS file.
-func gzName(aFilename string) string {
-	if 0 == len(aFilename) {
-		return `/dev/null`
-	}
-
-	if result, err := filepath.Abs(aFilename); nil == err {
-		return result + cssGZnameSuffix
-	}
-
-	return aFilename + cssGZnameSuffix
-} // gzName()
-
-// `minName()` returns the name to use for the trimmed CSS file.
-//
-//	`aFilename` The name of the original CSS file.
-func minName(aFilename string) string {
-	if 0 == len(aFilename) {
-		return `/dev/null`
-	}
-
-	if result, err := filepath.Abs(aFilename); nil == err {
-		aFilename = result
-	}
-
-	if strings.HasSuffix(aFilename, `.css`) {
-		return aFilename[:len(aFilename)-4] + cssMinNameSuffix
-	}
-
-	return aFilename + cssMinNameSuffix
-} // minName()
 
 // `newFS()` returns a new `tCSSFilesFilesystem` instance.
 //
