@@ -6,7 +6,7 @@
 [![Issues](https://img.shields.io/github/issues/mwat56/cssfs.svg)](https://github.com/mwat56/cssfs/issues?q=is%3Aopen+is%3Aissue)
 [![Size](https://img.shields.io/github/repo-size/mwat56/cssfs.svg)](https://github.com/mwat56/cssfs/)
 [![Tag](https://img.shields.io/github/tag/mwat56/cssfs.svg)](https://github.com/mwat56/cssfs/tags)
-[![License](https://img.shields.io/github/mwat56/cssfs.svg)](https://github.com/mwat56/cssfs/blob/master/LICENSE)
+[![License](https://img.shields.io/github/mwat56/cssfs.svg)](https://github.com/mwat56/cssfs/blob/main/LICENSE)
 
 ----
 
@@ -60,7 +60,8 @@ Otherwise it creates the minified version from the original CSS file to be used 
 
 ## Caveat
 
-This package expects wellformed CSS files. If you find problems – i.e. incorrectly minified CSS – please let me know.
+This package expects wellformed CSS files.
+If you find problems – i.e. incorrectly minified CSS – please let me know (e.g. file an `issue`).
 
 ## Licence
 
