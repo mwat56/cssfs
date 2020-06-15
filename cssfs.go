@@ -269,6 +269,15 @@ func (cf tCSSfilesFilesystem) Open(aFilename string) (http.File, error) {
 		return tNoDirsFile{rFile}, nil
 	}
 
+	// In case the original CSS is younger than the (old) mini version
+	// create a new minified file:
+	if err = cf.createMinFile(aFilename); nil == err {
+		if mFile, err = os.OpenFile(mName, os.O_RDONLY, 0); nil == err {
+			rFile, mFile = mFile, nil
+			return tNoDirsFile{rFile}, nil
+		}
+	}
+
 	if ages.GzAge.After(ages.CSSAge) {
 		rFile, zFile = zFile, nil
 		return tNoDirsFile{rFile}, nil
@@ -328,7 +337,7 @@ func FileServer(aRootDir string) http.Handler {
 
 	//TODO implement additional func argument
 
-	return http.FileServer(newFS(aRootDir, true))
+	return http.FileServer(newFS(aRootDir, false))
 } // FileServer()
 
 /* _EoF_ */
