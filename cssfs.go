@@ -184,8 +184,9 @@ func (cf tCSSfilesFilesystem) Open(aFilename string) (http.File, error) {
 	var (
 		ages                       tCSSages
 		cFile, mFile, rFile, zFile http.File
-		err                        error
+		err, err1                  error
 		fInfo                      os.FileInfo
+		nullTime                   time.Time
 	)
 	defer func() {
 		if nil != cFile {
@@ -204,89 +205,79 @@ func (cf tCSSfilesFilesystem) Open(aFilename string) (http.File, error) {
 			filepath.FromSlash(path.Clean(`/`+aFilename)))
 	}
 
-	if cf.useGZip {
-		zName := cf.gzName(aFilename)
-		if zFile, err = os.OpenFile(zName, os.O_RDONLY, 0); nil != err {
-			// The compressed CSS file couldn't be opened
-			// hence try to create the compressed version:
-			if err = cf.createGZfile(aFilename); nil == err {
-				// Now, try again to open the compressed CSS:
-				if zFile, err = os.OpenFile(zName, os.O_RDONLY, 0); nil == err {
-					// Since the GZipped file was just created
-					// we don't need the age checks below.
-					rFile, zFile = zFile, nil
-					return tNoDirsFile{rFile}, nil
-				}
-			}
-			// Since the compressed file couldn't be created
-			// the `ages.GzAge` remains NULL
-		} else {
-			if fInfo, err = zFile.Stat(); nil == err {
-				ages.GzAge = fInfo.ModTime()
-			}
+	if cFile, err = os.OpenFile(aFilename, os.O_RDONLY, 0); nil == err {
+		if fInfo, err = cFile.Stat(); nil == err {
+			ages.CSSAge = fInfo.ModTime()
 		}
+	} else {
+		err1 = err // WTF: we can't open the original CSS?
 	}
-	// Reaching this point means:
-	// Either we don't use GZip OR there was an old compressed file present.
 
 	mName := cf.minName(aFilename)
-	if mFile, err = os.OpenFile(mName, os.O_RDONLY, 0); nil != err {
-		// The minified CSS file couldn't be opened
-		// hence try to create the minified version:
-		if err = cf.createMinFile(aFilename); nil == err {
-			// Now, try again to open the minified CSS:
-			if mFile, err = os.OpenFile(mName, os.O_RDONLY, 0); nil == err {
-				// Since the minified file was just created
-				// we don't need the age checks below.
-				rFile, mFile = mFile, nil
-				return tNoDirsFile{rFile}, nil
-			}
-		}
-		// Since the minified file couldn't be created
-		// the `ages.MinAge` remains NULL
-	} else {
+	if mFile, err = os.OpenFile(mName, os.O_RDONLY, 0); nil == err {
 		if fInfo, err = mFile.Stat(); nil == err {
 			ages.MinAge = fInfo.ModTime()
 		}
 	}
 
-	if cFile, err = os.OpenFile(aFilename, os.O_RDONLY, 0); nil == err {
-		if fInfo, err = cFile.Stat(); nil == err {
-			ages.CSSAge = fInfo.ModTime()
+	if ages.CSSAge.After(ages.MinAge) {
+		if nil != mFile {
+			_ = mFile.Close()
+			ages.MinAge = nullTime // clear the time
+		}
+		// Original CSS is younger than the minified file
+		// hence we create new minified CSS:
+		if err = cf.createMinFile(aFilename); nil == err {
+			if mFile, err = os.OpenFile(mName, os.O_RDONLY, 0); nil == err {
+				if fInfo, err = mFile.Stat(); nil == err {
+					ages.MinAge = fInfo.ModTime()
+				}
+			}
 		}
 	}
 
-	// Check whether the minified file is
-	// younger than the original CSS file:
-	if ages.MinAge.After(ages.CSSAge) {
-		// Check whether the compressed file is younger:
-		if ages.GzAge.After(ages.MinAge) {
-			rFile, zFile = zFile, nil
-			return tNoDirsFile{rFile}, nil
+	if cf.useGZip {
+		zName := cf.gzName(aFilename)
+		if zFile, err = os.OpenFile(zName, os.O_RDONLY, 0); nil == err {
+			if fInfo, err = zFile.Stat(); nil == err {
+				ages.GzAge = fInfo.ModTime()
+			}
 		}
+		if ages.MinAge.After(ages.GzAge) {
+			if nil != zFile {
+				_ = zFile.Close()
+				ages.GzAge = nullTime // clear the time
+			}
+			// Wait a moment to avoid a possible identical
+			// file creation time with the minified file:
+			time.Sleep(time.Millisecond * 10)
 
-		rFile, mFile = mFile, nil
-		return tNoDirsFile{rFile}, nil
+			// Minified CSS is younger than the compressed file
+			// hence we create new compressed CSS:
+			if err = cf.createGZfile(aFilename); nil == err {
+				if zFile, err = os.OpenFile(zName, os.O_RDONLY, 0); nil == err {
+					if fInfo, err = zFile.Stat(); nil == err {
+						ages.GzAge = fInfo.ModTime()
+					}
+				}
+			}
+		}
 	}
 
-	// In case the original CSS is younger than the (old) mini version
-	// create a new minified file:
-	if err = cf.createMinFile(aFilename); nil == err {
-		if mFile, err = os.OpenFile(mName, os.O_RDONLY, 0); nil == err {
-			rFile, mFile = mFile, nil
-			return tNoDirsFile{rFile}, nil
-		}
-	}
-
-	if ages.GzAge.After(ages.CSSAge) {
+	if ages.GzAge.After(ages.MinAge) && ages.MinAge.After(ages.CSSAge) {
 		rFile, zFile = zFile, nil
 		return tNoDirsFile{rFile}, nil
 	}
 
+	if ages.MinAge.After(ages.CSSAge) {
+		rFile, mFile = mFile, nil
+		return tNoDirsFile{rFile}, nil
+	}
+
 	rFile, cFile = cFile, nil
-	// Here `err` might be caused by an unsuccessful
+	// Here `err1` might be caused by an unsuccessful
 	// opening of the supposed original CSS file:
-	return tNoDirsFile{rFile}, err
+	return tNoDirsFile{rFile}, err1
 } // Open()
 
 // Readdir reads the contents of the directory associated with file `f`
