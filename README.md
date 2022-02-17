@@ -65,7 +65,7 @@ If you find problems – i.e. incorrectly minified CSS – please let me know (e
 
 ## Licence
 
-        Copyright © 2020 M.Watermann, 10247 Berlin, Germany
+        Copyright © 2020, 2022 M.Watermann, 10247 Berlin, Germany
                         All rights reserved
                     EMail : <support@mwat.de>
 
