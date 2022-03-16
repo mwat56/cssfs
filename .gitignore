@@ -2,5 +2,6 @@
 *.bak
 css/
 .git/
+.github/
 TODO*
 .vscode/
