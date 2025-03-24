@@ -1,7 +1,8 @@
 /*
-   Copyright © 2020, 2022 M.Watermann, 10247 Berlin, Germany
-                  All rights reserved
-               EMail : <support@mwat.de>
+Copyright © 2020, 2025 M.Watermann, 10247 Berlin, Germany
+
+	   All rights reserved
+	EMail : <support@mwat.de>
 */
 package cssfs
 
@@ -10,7 +11,6 @@ package cssfs
 import (
 	"compress/gzip"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -82,7 +82,7 @@ var (
 //
 //	`aFilename` The URLpath/filename of the original CSS file.
 func (cf tCSSfilesFilesystem) createMinFile(aFilename string) error {
-	cssData, err := ioutil.ReadFile(aFilename) // #nosec G304
+	cssData, err := os.ReadFile(aFilename) // #nosec G304
 	if err != nil {
 		return err
 	}
@@ -91,7 +91,7 @@ func (cf tCSSfilesFilesystem) createMinFile(aFilename string) error {
 		cssData = re.regEx.ReplaceAll(cssData, []byte(re.replace))
 	}
 
-	return ioutil.WriteFile(cf.minName(aFilename), cssData, 0644)
+	return os.WriteFile(cf.minName(aFilename), cssData, 0644)
 } // createMinFile()
 
 // `createGZfile()` generates a minified version of file `aFilename`
